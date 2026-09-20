@@ -1,5 +1,14 @@
 export type JsonObject = Record<string, unknown>;
-export type PortalRole = "user" | "admin";
+export type PortalRole = "user" | "admin" | "founder" | "ceo" | "coo";
+
+export interface PortalPerson {
+  id: string;
+  email: string;
+  role: PortalRole;
+  active: boolean;
+  createdAt: string | null;
+  lastSignIn: string | null;
+}
 export type Tool = "neo" | "orbit";
 
 export interface PortalSession {

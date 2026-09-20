@@ -1,7 +1,8 @@
 import "server-only";
 
-import { dbClient } from "@/lib/db/client";
-import type { JsonObject, ReferralBot, Transaction } from "@/types";
+import { dbClient, authClient } from "@/lib/db/client";
+import { isPortalRole, STAFF_ROLES } from "@/lib/auth/roles";
+import type { JsonObject, PortalRole, ReferralBot, Transaction } from "@/types";
 
 const CHUNK = 500;
 const now = () => new Date().toISOString();
@@ -11,7 +12,7 @@ async function assertResult<T>({ data, error }: { data: T; error: { message: str
   return data;
 }
 
-export async function roleFor(userId: string): Promise<"user" | "admin"> {
+export async function roleFor(userId: string): Promise<PortalRole> {
   const client = dbClient();
   const { data, error } = await client.from("profiles").select("role").eq("user_id", userId).maybeSingle();
   if (error) throw new Error(`Supabase profile lookup failed: ${error.message}`);
@@ -20,7 +21,38 @@ export async function roleFor(userId: string): Promise<"user" | "admin"> {
     if (result.error) throw new Error(`Supabase profile backfill failed: ${result.error.message}`);
     return "user";
   }
-  return data.role === "admin" ? "admin" : "user";
+  return isPortalRole(data.role) ? data.role : "user";
+}
+
+export async function activeFor(userId: string): Promise<boolean> {
+  const { data, error } = await dbClient().from("profiles").select("active").eq("user_id", userId).maybeSingle();
+  if (error) throw new Error(`Supabase profile lookup failed: ${error.message}`);
+  return data ? data.active !== false : true;
+}
+
+export async function emailFor(userId: string): Promise<string> {
+  try {
+    const { data } = await authClient().auth.admin.getUserById(userId);
+    return data.user?.email ?? userId;
+  } catch {
+    return userId;
+  }
+}
+
+export async function staffList(): Promise<Array<{ user_id: string; role: PortalRole; active: boolean; created_at: string }>> {
+  const result = await dbClient().from("profiles").select("user_id, role, active, created_at").in("role", [...STAFF_ROLES]).order("created_at");
+  const rows = await assertResult(result) as Array<{ user_id: string; role: string; active: boolean | null; created_at: string }>;
+  return rows.map((row) => ({ user_id: row.user_id, role: isPortalRole(row.role) ? row.role : "user", active: row.active !== false, created_at: row.created_at }));
+}
+
+export async function setStaffRole(userId: string, role: Exclude<PortalRole, "user">) {
+  const result = await dbClient().from("profiles").update({ role, updated_at: now() }).eq("user_id", userId);
+  if (result.error) throw new Error(`Supabase profile update failed: ${result.error.message}`);
+}
+
+export async function setStaffActive(userId: string, active: boolean) {
+  const result = await dbClient().from("profiles").update({ active, updated_at: now() }).eq("user_id", userId);
+  if (result.error) throw new Error(`Supabase profile update failed: ${result.error.message}`);
 }
 
 export async function transactionsFor(userId: string): Promise<Transaction[]> {

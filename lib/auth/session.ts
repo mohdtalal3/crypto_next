@@ -4,6 +4,7 @@ import { createHash } from "node:crypto";
 import { EncryptJWT, jwtDecrypt } from "jose";
 import { cookies } from "next/headers";
 import type { PortalSession } from "@/types";
+import { isPortalRole } from "@/lib/auth/roles";
 
 const COOKIE = "aurum_portal_session";
 const MAX_AGE = 60 * 60 * 24 * 7;
@@ -32,7 +33,7 @@ export async function decodeSession(value?: string): Promise<PortalSession | nul
     return {
       userId: payload.userId,
       email: payload.email,
-      role: payload.role === "admin" ? "admin" : "user",
+      role: isPortalRole(payload.role) ? payload.role : "user",
     };
   } catch {
     return null;
