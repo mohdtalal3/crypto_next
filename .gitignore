@@ -1,0 +1,58 @@
+# Dependencies and package-manager state
+node_modules/
+.pnp/
+.pnp.*
+
+# Next.js and TypeScript output
+.next/
+out/
+dist/
+coverage/
+*.tsbuildinfo
+
+# Local environment files and credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.p12
+*.pfx
+
+# Logs and local runtime state
+*.log
+*.log.*
+*.pid
+*.seed
+
+# Private API captures, exports, and manually saved responses
+*.har
+har_extract/
+aurum_config.json
+aurum_transactions.csv
+sample_response.json
+exports/
+
+# Python cache / virtual environments (the preserved Flask source remains tracked)
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+migrations
+# Editor and operating-system files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Hosting-tool local state
+.vercel/
+
+aurum_flask
+.env.example
+MIGRATION.md
+CONTEXT.md
+ARCHITECTURE.md
+test.py
