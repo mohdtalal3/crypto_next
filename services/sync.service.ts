@@ -1,6 +1,6 @@
 import "server-only";
 
-import { upsertExAiBot, upsertLiveTrading, upsertOrbit, upsertOrbitPartnerProgram, upsertOrbitPartnerStatistics, upsertPartnerStats, upsertReferralBots, upsertTransactions, upsertUserInfo, upsertWallet, upsertZeusPro } from "@/lib/db/portal";
+import { refreshTransactionSummary, upsertExAiBot, upsertLiveTrading, upsertOrbit, upsertOrbitPartnerProgram, upsertOrbitPartnerStatistics, upsertPartnerStats, upsertReferralBots, upsertTransactions, upsertUserInfo, upsertWallet, upsertZeusPro } from "@/lib/db/portal";
 import { AppError } from "@/lib/utils/errors";
 import { fetchNeoBank } from "@/scraping/neo-bank";
 import { fetchOrbitOne } from "@/scraping/orbitone";
@@ -34,6 +34,11 @@ export async function syncTool(session: PortalSession, tool: Tool) {
     if (data.wallet) await upsertWallet(session.userId, data.wallet);
     if (data.liveTrading) await upsertLiveTrading(session.userId, data.liveTrading);
     const written = await upsertTransactions(session.userId, data.transactions);
+    try {
+      await refreshTransactionSummary(session.userId);
+    } catch {
+      // The summary is a cache — the dashboard falls back to computing it.
+    }
     if (data.referralBots) await upsertReferralBots(session.userId, data.referralBots.bots);
     if (data.affiliate || data.referralBots) {
       const partner = { ...(data.affiliate ?? {}) };

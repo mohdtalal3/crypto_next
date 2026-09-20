@@ -2,6 +2,7 @@ import "server-only";
 
 import { dbClient, authClient } from "@/lib/db/client";
 import { isPortalRole, STAFF_ROLES } from "@/lib/auth/roles";
+import { summarizeTransactions, type TickerAggregate } from "@/lib/utils/summary";
 import type { JsonObject, PortalRole, ReferralBot, Transaction } from "@/types";
 
 const CHUNK = 500;
@@ -183,4 +184,40 @@ export async function referralBotsFor(userId: string): Promise<ReferralBot[]> {
     all.push(...batch);
     if (batch.length < 1000) return all;
   }
+}
+
+export async function refreshTransactionSummary(userId: string) {
+  const summary = summarizeTransactions(await transactionsFor(userId));
+  const client = dbClient();
+  const cleared = await client.from("transaction_summary").delete().eq("user_id", userId);
+  if (cleared.error) throw new Error(`Supabase transaction summary reset failed: ${cleared.error.message}`);
+  if (!summary.length) return;
+  const result = await client.from("transaction_summary").upsert(summary.map((s) => ({
+    user_id: userId, ticker: s.ticker, tx_count: s.count, total_in: s.in, total_out: s.out, updated_at: now(),
+  })));
+  if (result.error) throw new Error(`Supabase transaction summary upsert failed: ${result.error.message}`);
+}
+
+export async function transactionSummaryFor(userId: string): Promise<TickerAggregate[]> {
+  const result = await dbClient().from("transaction_summary").select("ticker, tx_count, total_in, total_out")
+    .eq("user_id", userId).order("tx_count", { ascending: false });
+  const rows = await assertResult(result) as Array<{ ticker: string; tx_count: number; total_in: string | number; total_out: string | number }>;
+  return rows.map((row) => ({ ticker: row.ticker, count: row.tx_count, in: Number(row.total_in), out: Number(row.total_out) }));
+}
+
+export async function transactionSummaryEveryone(): Promise<{ people: number; transactions: number; tickers: TickerAggregate[] }> {
+  const result = await dbClient().from("transaction_summary").select("user_id, ticker, tx_count, total_in, total_out");
+  const rows = await assertResult(result) as Array<{ user_id: string; ticker: string; tx_count: number; total_in: string | number; total_out: string | number }>;
+  const merged = new Map<string, { in: number; out: number; count: number }>();
+  const people = new Set<string>();
+  for (const row of rows) {
+    people.add(row.user_id);
+    const slot = merged.get(row.ticker) ?? { in: 0, out: 0, count: 0 };
+    slot.in += Number(row.total_in);
+    slot.out += Number(row.total_out);
+    slot.count += row.tx_count;
+    merged.set(row.ticker, slot);
+  }
+  const tickers = [...merged.entries()].map(([ticker, s]) => ({ ticker, ...s })).sort((a, b) => b.count - a.count);
+  return { people: people.size, transactions: tickers.reduce((total, t) => total + t.count, 0), tickers };
 }
