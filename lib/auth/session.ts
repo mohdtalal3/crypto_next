@@ -15,7 +15,9 @@ function secret() {
 }
 
 export async function encodeSession(session: PortalSession) {
-  return new EncryptJWT({ ...session })
+  // API tokens are deliberately excluded. They exist only in memory for the
+  // one POST /api/token request that immediately performs a sync.
+  return new EncryptJWT({ userId: session.userId, email: session.email, role: session.role })
     .setProtectedHeader({ alg: "dir", enc: "A256GCM" })
     .setIssuedAt()
     .setExpirationTime(`${MAX_AGE}s`)
@@ -31,8 +33,6 @@ export async function decodeSession(value?: string): Promise<PortalSession | nul
       userId: payload.userId,
       email: payload.email,
       role: payload.role === "admin" ? "admin" : "user",
-      aurumToken: typeof payload.aurumToken === "string" ? payload.aurumToken : undefined,
-      orbitToken: typeof payload.orbitToken === "string" ? payload.orbitToken : undefined,
     };
   } catch {
     return null;

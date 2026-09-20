@@ -1,6 +1,6 @@
 # Aurum Portal
 
-A full-stack Next.js portal for Neo Bank and OrbitOne. It authenticates with Supabase Auth, stores each tool's short-lived API token only in an encrypted HTTP-only session cookie, syncs encrypted Aurum data into the existing Supabase database, and serves dashboard data from that database.
+A full-stack Next.js portal for Neo Bank and OrbitOne. It authenticates with Supabase Auth, uses a pasted tool token only for the single sync request that immediately follows, then discards it. The portal syncs encrypted Aurum data into the existing Supabase database and serves dashboard data from that database.
 
 ## Requirements
 
