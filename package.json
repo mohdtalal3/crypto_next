@@ -40,8 +40,10 @@
     "@types/node": "20.17.57",
     "@types/react": "^19.1.2",
     "@types/react-dom": "^19.1.2",
-    "electron": "^44.4.4",
-    "electron-builder": "^26.15.3",
     "typescript": "^5.8.3"
+  },
+  "optionalDependencies": {
+    "electron": "^44.4.4",
+    "electron-builder": "^26.15.3"
   }
 }
