@@ -12,12 +12,12 @@ export async function POST(request: Request) {
   if (!session) return NextResponse.redirect(new URL("/", request.url), 303);
   const form = await request.formData();
   const parsed = tokenSchema.safeParse({ tool: form.get("tool"), token: String(form.get("token") ?? "").replace(/^Bearer\s+/i, "") });
-  const tool = parsed.success ? parsed.data.tool : (form.get("tool") === "orbit" ? "orbit" : "neo");
+  const tool = parsed.success ? parsed.data.tool : (form.get("tool") === "orbit" ? "orbit" : form.get("tool") === "backoffice" ? "backoffice" : "neo");
   if (!parsed.success) return NextResponse.redirect(new URL(`/token?tool=${tool}&error=${encodeURIComponent(parsed.error.issues[0].message)}`, request.url), 303);
-  const transient = { ...session, aurumToken: tool === "neo" ? parsed.data.token : undefined, orbitToken: tool === "orbit" ? parsed.data.token : undefined };
+  const transient = { ...session, aurumToken: tool === "neo" ? parsed.data.token : undefined, orbitToken: tool === "orbit" ? parsed.data.token : undefined, backofficeToken: tool === "backoffice" ? parsed.data.token : undefined };
   try {
     await syncTool(transient, tool);
-    const response = NextResponse.redirect(new URL(tool === "neo" ? "/dashboard" : "/orbit", request.url), 303);
+    const response = NextResponse.redirect(new URL(tool === "neo" ? "/dashboard" : tool === "backoffice" ? "/backoffice/affiliates" : "/orbit", request.url), 303);
     const cookie = await sessionCookie(session);
     response.cookies.set(cookie.name, cookie.value, cookie.options);
     return response;

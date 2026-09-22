@@ -9,7 +9,7 @@ export interface PortalPerson {
   createdAt: string | null;
   lastSignIn: string | null;
 }
-export type Tool = "neo" | "orbit";
+export type Tool = "neo" | "orbit" | "backoffice";
 
 export interface PortalSession {
   userId: string;
@@ -17,6 +17,7 @@ export interface PortalSession {
   role: PortalRole;
   aurumToken?: string;
   orbitToken?: string;
+  backofficeToken?: string;
 }
 
 export interface Transaction {

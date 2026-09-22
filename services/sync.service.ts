@@ -1,22 +1,31 @@
 import "server-only";
 
-import { refreshTransactionSummary, upsertExAiBot, upsertLiveTrading, upsertOrbit, upsertOrbitPartnerProgram, upsertOrbitPartnerStatistics, upsertPartnerStats, upsertReferralBots, upsertTransactions, upsertUserInfo, upsertWallet, upsertZeusPro } from "@/lib/db/portal";
+import { refreshTransactionSummary, upsertBackofficeAffiliates, upsertBackofficeProfile, upsertExAiBot, upsertLiveTrading, upsertOrbit, upsertOrbitPartnerProgram, upsertOrbitPartnerStatistics, upsertPartnerStats, upsertReferralBots, upsertTransactions, upsertUserInfo, upsertWallet, upsertZeusPro } from "@/lib/db/portal";
 import { AppError } from "@/lib/utils/errors";
+import { fetchBackofficeAffiliates, fetchBackofficeProfile } from "@/scraping/backoffice";
 import { fetchNeoBank } from "@/scraping/neo-bank";
 import { fetchOrbitOne } from "@/scraping/orbitone";
 import { AurumUnauthorizedError } from "@/scraping/shared/http";
 import type { JsonObject, PortalSession, Tool } from "@/types";
 
+const toolName = (tool: Tool) => (tool === "orbit" ? "OrbitOne" : tool === "backoffice" ? "Backoffice.aurum" : "Aurum");
+
 export class SyncUnauthorizedError extends AppError {
   constructor(tool: Tool) {
-    super("TOKEN_EXPIRED", `${tool === "orbit" ? "OrbitOne" : "Aurum"} token expired or invalid — paste a fresh one.`, 401);
+    super("TOKEN_EXPIRED", `${toolName(tool)} token expired or invalid — paste a fresh one.`, 401);
   }
 }
 
 export async function syncTool(session: PortalSession, tool: Tool) {
-  const token = tool === "neo" ? session.aurumToken : session.orbitToken;
+  const token = tool === "neo" ? session.aurumToken : tool === "backoffice" ? session.backofficeToken : session.orbitToken;
   if (!token) throw new AppError("TOKEN_REQUIRED", "Connect this account before syncing.", 400);
   try {
+    if (tool === "backoffice") {
+      const [affiliates, profile] = await Promise.all([fetchBackofficeAffiliates(token), fetchBackofficeProfile(token)]);
+      await upsertBackofficeAffiliates(session.userId, affiliates);
+      await upsertBackofficeProfile(session.userId, profile);
+      return { tool, transactions: 0 };
+    }
     if (tool === "orbit") {
       const data = await fetchOrbitOne(token);
       const { investments, partners, partnerReferrals, rankStatistics, ...orbitData } = data;
@@ -40,6 +49,7 @@ export async function syncTool(session: PortalSession, tool: Tool) {
       // The summary is a cache — the dashboard falls back to computing it.
     }
     if (data.referralBots) await upsertReferralBots(session.userId, data.referralBots.bots);
+    if (data.affiliate) await upsertBackofficeAffiliates(session.userId, data.affiliate);
     if (data.affiliate || data.referralBots) {
       const partner = { ...(data.affiliate ?? {}) };
       if (data.referralBots) partner.referralTrading = data.referralBots.summary;

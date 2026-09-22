@@ -7,5 +7,5 @@ export const credentialsSchema = z.object({
 
 export const tokenSchema = z.object({
   token: z.string().trim().min(1, "Please paste a token first.").max(8000),
-  tool: z.enum(["neo", "orbit"]).default("neo"),
+  tool: z.enum(["neo", "orbit", "backoffice"]).default("neo"),
 });

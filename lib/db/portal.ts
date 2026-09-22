@@ -106,6 +106,8 @@ export const liveTradingFor = (userId: string) => documentFor("live_trading", us
 export const orbitFor = (userId: string) => documentFor("orbit", userId);
 export const exAiBotFor = (userId: string) => documentFor("ex_ai_bot", userId);
 export const orbitPartnerProgramFor = (userId: string) => documentFor("orbit_partner_program", userId);
+export const backofficeAffiliatesFor = (userId: string) => documentFor("backoffice_affiliates", userId);
+export const backofficeProfileFor = (userId: string) => documentFor("backoffice_profile", userId);
 export const upsertUserInfo = (userId: string, data: JsonObject) => upsertDocument("user_info", userId, data);
 export const upsertPartnerStats = (userId: string, data: JsonObject) => upsertDocument("partner_stats", userId, data);
 export const upsertZeusPro = (userId: string, data: JsonObject) => upsertDocument("zeus_pro", userId, data);
@@ -114,6 +116,17 @@ export const upsertLiveTrading = (userId: string, data: JsonObject) => upsertDoc
 export const upsertOrbit = (userId: string, data: JsonObject) => upsertDocument("orbit", userId, data);
 export const upsertExAiBot = (userId: string, data: JsonObject) => upsertDocument("ex_ai_bot", userId, data);
 export const upsertOrbitPartnerProgram = (userId: string, data: JsonObject) => upsertDocument("orbit_partner_program", userId, data);
+export const upsertBackofficeAffiliates = (userId: string, data: JsonObject) => upsertDocument("backoffice_affiliates", userId, data);
+
+export async function upsertBackofficeProfile(userId: string, data: JsonObject) {
+  const inviter = (data.inviter && typeof data.inviter === "object" && !Array.isArray(data.inviter) ? data.inviter : {}) as JsonObject;
+  const result = await dbClient().from("backoffice_profile").upsert({
+    user_id: userId, my_id: data.id ?? null, pretty_id: data.prettyId ?? null,
+    inviter_id: data.inviterId ?? null, inviter_pretty_id: inviter.prettyId ?? null,
+    data, updated_at: now(),
+  });
+  if (result.error) throw new Error(`Supabase backoffice profile upsert failed: ${result.error.message}`);
+}
 function jsonRows(value: unknown): JsonObject[] {
   return Array.isArray(value) ? value.filter((item): item is JsonObject => Boolean(item) && typeof item === "object" && !Array.isArray(item)) : [];
 }
