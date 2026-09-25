@@ -19,7 +19,7 @@ export function PeopleTable({ people, founder }: { people: PortalPerson[]; found
         <td>{date(p.createdAt)}</td>
         <td>{date(p.lastSignIn)}</td>
         <td className="actions">
-          <a className="btn ghost" href={`/dashboard?user=${p.id}`}>🏦 Neo</a>
+          {/* Neo Bank view hidden — re-enable when needed: <a className="btn ghost" href={`/dashboard?user=${p.id}`}>🏦 Neo</a> */}
           <a className="btn ghost" href={`/orbit?user=${p.id}`}>🪐 Orbit</a>
           <a className="btn ghost" href={`/backoffice/affiliates?user=${p.id}`}>🗂️ Backoffice</a>
           {founder && isStaff(p.role) && p.role !== "founder" && <a className="btn ghost" href="/admin">Manage</a>}
