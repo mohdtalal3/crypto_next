@@ -1,6 +1,7 @@
 import "server-only";
 
 import { refreshTransactionSummary, upsertBackofficeAffiliates, upsertBackofficeProfile, upsertExAiBot, upsertLiveTrading, upsertOrbit, upsertOrbitPartnerProgram, upsertOrbitPartnerStatistics, upsertPartnerStats, upsertReferralBots, upsertTransactions, upsertUserInfo, upsertWallet, upsertZeusPro } from "@/lib/db/portal";
+import { ensureFirstClaim } from "@/services/claim.service";
 import { AppError } from "@/lib/utils/errors";
 import { fetchBackofficeAffiliates, fetchBackofficeProfile } from "@/scraping/backoffice";
 import { fetchNeoBank } from "@/scraping/neo-bank";
@@ -24,6 +25,11 @@ export async function syncTool(session: PortalSession, tool: Tool) {
       const [affiliates, profile] = await Promise.all([fetchBackofficeAffiliates(token), fetchBackofficeProfile(token)]);
       await upsertBackofficeAffiliates(session.userId, affiliates);
       await upsertBackofficeProfile(session.userId, profile);
+      try {
+        await ensureFirstClaim(session.userId);
+      } catch {
+        // The claim number is best-effort; it needs a synced profile with a pretty ID.
+      }
       return { tool, transactions: 0 };
     }
     if (tool === "orbit") {
