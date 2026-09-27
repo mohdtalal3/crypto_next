@@ -15,22 +15,41 @@
   "build": {
     "appId": "foundation.aurum.portal",
     "productName": "Aurum Portal",
-    "files": ["electron/**/*", "package.json"],
+    "files": [
+      "electron/**/*",
+      "package.json"
+    ],
     "extraResources": [
-      { "from": ".next/standalone", "to": "app" },
-      { "from": ".next/static", "to": "app/.next/static" },
-      { "from": "public", "to": "app/public" },
-      { "from": ".env", "to": "app/.env" }
+      {
+        "from": ".next/standalone",
+        "to": "app"
+      },
+      {
+        "from": ".next/static",
+        "to": "app/.next/static"
+      },
+      {
+        "from": "public",
+        "to": "app/public"
+      },
+      {
+        "from": ".env",
+        "to": "app/.env"
+      }
     ],
     "mac": {
       "category": "public.app-category.finance",
-      "target": ["dmg", "zip"]
+      "target": [
+        "dmg",
+        "zip"
+      ]
     }
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",
     "jose": "^6.0.12",
     "next": "^15.5.2",
+    "pdf-lib": "^1.17.1",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "undici": "^7.15.0",

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-export function ClaimSidebar({ active = "claims" }: { active?: "claims" }) {
+export function ClaimSidebar({ active = "claims" }: { active?: "claims" | "certificates" }) {
   const [open, setOpen] = useState(false);
   const close = () => setOpen(false);
   return <>
@@ -11,6 +11,7 @@ export function ClaimSidebar({ active = "claims" }: { active?: "claims" }) {
     <aside className={`sidebar ${open ? "open" : ""}`}><a href="/claim" className="brand" onClick={close}><img className="logo" src="/logo.png" alt=""/>Claim</a><nav className="nav">
       <a href="/tools" onClick={close}>🧭 All tools</a>
       <a href="/claim" onClick={close} className={active === "claims" ? "active" : ""}>Claims</a>
+      <a href="/claim/certificates" onClick={close} className={active === "certificates" ? "active" : ""}>Certificates</a>
     </nav><form action="/api/auth/logout" method="post"><button className="btn ghost" type="submit">Log out</button></form></aside>
   </>;
 }
