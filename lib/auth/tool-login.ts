@@ -12,6 +12,7 @@ export interface PendingToolLogin {
   tool: "orbit" | "backoffice";
   email: string;
   password: string;
+  stickyPort: number;
 }
 
 /**
@@ -19,7 +20,7 @@ export interface PendingToolLogin {
  * encrypted, HTTP-only cookie. Cleared as soon as the OTP step completes.
  */
 export async function setPendingToolLogin(pending: PendingToolLogin) {
-  const value = await new EncryptJWT({ tool: pending.tool, email: pending.email, password: pending.password })
+  const value = await new EncryptJWT({ tool: pending.tool, email: pending.email, password: pending.password, stickyPort: pending.stickyPort })
     .setProtectedHeader({ alg: "dir", enc: "A256GCM" })
     .setIssuedAt()
     .setExpirationTime(`${MAX_AGE}s`)
@@ -34,7 +35,7 @@ export async function readPendingToolLogin(): Promise<PendingToolLogin | null> {
     const { payload } = await jwtDecrypt(raw, secret());
     if (typeof payload.email !== "string" || typeof payload.password !== "string") return null;
     const tool = payload.tool === "orbit" ? "orbit" : "backoffice";
-    return { tool: tool as "orbit" | "backoffice", email: payload.email, password: payload.password };
+    return { tool: tool as "orbit" | "backoffice", email: payload.email, password: payload.password, stickyPort: Number(payload.stickyPort) || 10000 };
   } catch {
     return null;
   }

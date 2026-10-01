@@ -9,10 +9,16 @@ const attempts = 3;
 const resets = 3;
 const agents = new Map<string, Agent | ProxyAgent>();
 
+/** The configured proxy URL, or undefined when unset or explicitly disabled (PROXY=None). */
+export function proxyUrl(): string | undefined {
+  const value = process.env.PROXY?.trim();
+  return value && value.toLowerCase() !== "none" ? value : undefined;
+}
+
 function agent(origin: string) {
   const existing = agents.get(origin);
   if (existing) return existing;
-  const proxy = process.env.PROXY;
+  const proxy = proxyUrl();
   const fresh = proxy ? new ProxyAgent(proxy) : new Agent();
   agents.set(origin, fresh);
   return fresh;
