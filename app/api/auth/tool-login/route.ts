@@ -13,7 +13,7 @@ function extractedPage(tool: "orbit" | "backoffice", token: string) {
   const partial = `${escape(token.slice(0, 18))}${String.fromCharCode(8230)}${escape(token.slice(-6))}`;
   return new Response(`<!doctype html><html><head><meta charset="utf-8"/><title>Token extracted</title>
 <style>body{margin:0;background:#000;color:#e8ecf3;font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;display:grid;place-items:center;min-height:100vh}.card{background:#0a0a0d;border:1px solid #1e1e26;border-radius:16px;padding:28px;max-width:560px;width:calc(100% - 40px);text-align:center}h1{margin:0 0 8px;font-size:22px}.muted{color:#8b94a7}.token{display:inline-block;background:#111116;border:1px solid #1e1e26;border-radius:10px;padding:10px 14px;font:12px ui-monospace,Menlo,monospace;color:#9fe0b9;margin:14px 0}.spin{width:30px;height:30px;border:3px solid #fff3;border-top-color:#6c8cff;border-radius:50%;animation:s 1s linear infinite;margin:16px auto 0}@keyframes s{to{transform:rotate(360deg)}}</style></head>
-<body><div class="card"><h1>Token extracted</h1><p class="muted">Logged in to ${name} — syncing your account now.</p>
+<body><div class="card"><h1>Token extracted</h1><p class="muted">Syncing your ${name} account — this can take 3–5 minutes.</p>
 <code class="token">${escape(token.slice(0, 18))}${String.fromCharCode(8230)}${escape(token.slice(-6))}</code>
 <form method="post" action="/api/token"><input type="hidden" name="tool" value="${tool}"/><input type="hidden" name="token" value="${escape(token)}"/></form>
 <div class="spin"></div></div>
