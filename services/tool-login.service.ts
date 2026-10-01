@@ -1,5 +1,6 @@
 import "server-only";
 
+import { Agent, ProxyAgent, fetch } from "undici";
 import { decryptAurum, encryptAurum } from "@/scraping/shared/crypto";
 import { AppError } from "@/lib/utils/errors";
 import type { Tool } from "@/types";
@@ -9,6 +10,9 @@ const ORIGINS: Record<"orbit" | "backoffice", string> = {
   orbit: "https://app.orbitone.finance",
   backoffice: "https://backoffice.aurum.foundation",
 };
+
+// Same proxy policy as the scraping layer — the login API blocks datacenter IPs.
+const dispatcher = process.env.PROXY ? new ProxyAgent(process.env.PROXY) : new Agent();
 
 type LoginResponse = { data?: { accessToken?: unknown }; totpRequired?: unknown; error?: unknown; [key: string]: unknown };
 
@@ -21,8 +25,10 @@ async function loginPost(payload: Record<string, unknown>, origin: string): Prom
       "origin": origin,
       "referer": `${origin}/`,
       "x-requested-with": "aurum-with",
+      "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36",
     },
     body: JSON.stringify({ encrypted: encryptAurum(payload) }),
+    dispatcher,
     signal: AbortSignal.timeout(30_000),
   });
   if (!response.ok) throw new AppError("TOOL_LOGIN_FAILED", `Login request failed (HTTP ${response.status}).`, 502);
