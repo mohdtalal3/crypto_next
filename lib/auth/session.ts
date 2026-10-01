@@ -9,7 +9,7 @@ import { isPortalRole } from "@/lib/auth/roles";
 const COOKIE = "aurum_portal_session";
 const MAX_AGE = 60 * 60 * 24 * 7;
 
-function secret() {
+export function secret() {
   const value = process.env.SESSION_SECRET || process.env.SECRET_KEY;
   if (!value) throw new Error("SESSION_SECRET (or legacy SECRET_KEY) must be configured.");
   return createHash("sha256").update(value).digest();
