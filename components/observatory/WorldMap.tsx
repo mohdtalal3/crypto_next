@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { MemberPoint, RegionCount, WindowKey } from "@/lib/db/observatory";
+import type { RegionCount, WindowKey } from "@/lib/db/observatory";
 
 /* Coarse illustrative land mask: 64 columns (lon -180..180) x 30 rows (lat 78N..-62S),
    each row a list of inclusive column ranges that are land. */
@@ -46,7 +46,7 @@ const project = (lon: number, lat: number) => ({ x: ((lon + 180) / 360) * WIDTH,
 
 const WINDOWS: WindowKey[] = ["24H", "7D", "100D"];
 
-export function WorldMap({ windows, points, memberPoints }: { windows: Record<WindowKey, RegionCount[]>; points: Record<string, { lon: number; lat: number; count: number }>; memberPoints: MemberPoint[] }) {
+export function WorldMap({ windows, points }: { windows: Record<WindowKey, RegionCount[]>; points: Record<string, { lon: number; lat: number; count: number }> }) {
   const [active, setActive] = useState<WindowKey>("7D");
   const shown = windows[active] ?? [];
   const max = Math.max(1, ...shown.map((entry) => entry.count));
@@ -67,10 +67,6 @@ export function WorldMap({ windows, points, memberPoints }: { windows: Record<Wi
           }
           return cells;
         }))}
-        {memberPoints.map((member, index) => {
-          const { x, y } = project(member.longitude, member.latitude);
-          return <circle key={index} cx={x} cy={y} r={3.4} className="obs-member-dot"/>;
-        })}
         {shown.map((entry, index) => {
           const point = points[entry.region];
           if (!point) return null;

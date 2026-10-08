@@ -14,7 +14,7 @@ export async function POST(request: Request) {
   try {
     const session = await signUp(parsed.data.email, parsed.data.password);
     try {
-      await captureGeo(session.userId, geoFromRequest(request), true);
+      await captureGeo(session.userId, geoFromRequest(request));
     } catch {
       // Location is best-effort — never block a signup over it.
     }

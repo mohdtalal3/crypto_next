@@ -1,6 +1,9 @@
-import { getSession } from "@/lib/auth/session";
 import { observatoryData, type ObservatoryData } from "@/lib/db/observatory";
 import { WorldMap } from "@/components/observatory/WorldMap";
+
+// Public aggregates rebuild at most once per minute; every other visitor is
+// served from the CDN cache regardless of traffic.
+export const revalidate = 60;
 
 const SPARK_W = 300;
 const SPARK_H = 64;
@@ -16,21 +19,17 @@ function sparkline(history: number[]) {
 }
 
 function emptyData(): ObservatoryData {
-  return { members: 0, newMembers7d: 0, history: [], windows: { "24H": [], "7D": [], "100D": [] }, points: {}, memberPoints: [] };
+  return { members: 0, newMembers7d: 0, history: [], windows: { "24H": [], "7D": [], "100D": [] }, points: {} };
 }
 
 export default async function Observatory() {
-  const [session, fetched] = await Promise.all([
-    getSession(),
-    observatoryData().catch(() => emptyData()),
-  ]);
-  const data = fetched ?? emptyData();
+  const data = await observatoryData().catch(() => emptyData());
   const regionMax = Math.max(1, ...(data.windows["7D"] ?? []).map((entry) => entry.count));
   return <div className="observatory">
     <header className="obs-topbar">
       <div className="obs-brand"><img className="obs-logo" src="/logo.png" alt="D.A.R.A."/><div className="obs-wordmark"><strong>D.A.R.A.</strong><span>C A P T U R E &nbsp;·&nbsp; C L A I M &nbsp;·&nbsp; C R E D I T</span></div></div>
       <nav className="obs-nav"><a href="#overview">Overview</a><a href="#recovery">Recovery Program</a><a href="#lineage">My Lineage</a><a href="#updates">Updates</a></nav>
-      <a className="obs-member" href={session ? "/tools" : "/login"}>MEMBER VIEW <span aria-hidden="true">→</span></a>
+      <a className="obs-member" href="/login">MEMBER VIEW <span aria-hidden="true">→</span></a>
     </header>
 
     <section className="obs-hero" id="overview">
@@ -41,7 +40,7 @@ export default async function Observatory() {
 
     <section className="obs-grid">
       <div className="card obs-panel obs-map-panel">
-        <WorldMap windows={data.windows} points={data.points} memberPoints={data.memberPoints}/>
+        <WorldMap windows={data.windows} points={data.points}/>
       </div>
       <div className="obs-side">
         <div className="card obs-panel">
