@@ -47,20 +47,25 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",
+    "d3-geo": "^3.1.1",
     "geoip-lite": "^2.0.3",
     "jose": "^6.0.12",
     "next": "^15.5.2",
     "pdf-lib": "^1.17.1",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
+    "topojson-client": "^3.1.0",
     "undici": "^7.15.0",
+    "world-atlas": "^2.0.2",
     "zod": "3.24.4"
   },
   "devDependencies": {
+    "@types/d3-geo": "^3.1.1",
     "@types/geoip-lite": "^1.4.4",
     "@types/node": "20.17.57",
     "@types/react": "^19.1.2",
     "@types/react-dom": "^19.1.2",
+    "@types/topojson-client": "^3.1.5",
     "typescript": "^5.8.3"
   },
   "optionalDependencies": {

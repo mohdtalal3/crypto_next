@@ -6,19 +6,19 @@ import type { MemberGeo } from "@/lib/auth/geo";
 
 const DAY = 86400000;
 const HISTORY_DAYS = 30;
-const WINDOWS = { "24H": 1, "7D": 7, "100D": 100 } as const;
+const WINDOWS = { "24H": 1, "7D": 7, "30D": 30 } as const;
 export type WindowKey = keyof typeof WINDOWS;
 
 export interface RegionCount { region: Region | "Unknown"; count: number }
 export interface ObservatoryData {
   members: number;
-  newMembers7d: number;
+  deltas: Record<WindowKey, number>;
   history: number[];
   windows: Record<WindowKey, RegionCount[]>;
-  points: Record<string, { lon: number; lat: number; count: number }>;
+  points: Record<string, { lon: number; lat: number; labelDy: number; count: number }>;
 }
 
-interface DailyRow { day: string; members: number; new_members: number; by_country: Record<string, number> }
+interface DailyRow { day: string; members: number; by_country: Record<string, number> }
 
 /** Stores a member's country on their profile at signup. */
 export async function captureGeo(userId: string, geo: MemberGeo) {
@@ -44,19 +44,28 @@ function regionCountsFromDays(days: DailyRow[]): RegionCount[] {
 /** Pure read of the observatory_daily rows that the scheduled Supabase job
     (see migrations/021_observatory.sql) keeps up to date every 10 minutes. */
 async function readObservatory(): Promise<ObservatoryData> {
-  const stored = await dbClient().from("observatory_daily").select("day, members, new_members, by_country").order("day");
+  const stored = await dbClient().from("observatory_daily").select("day, members, by_country").order("day");
   if (stored.error) throw new Error(`Supabase observatory read failed: ${stored.error.message}`);
   const byDay = new Map<string, DailyRow>((stored.data as DailyRow[]).map((row) => [row.day, row]));
   const stamp = Date.now();
+  const dayAt = (index: number) => new Date(stamp - index * DAY).toISOString().slice(0, 10);
 
   const windowRows = (days: number) => {
     const rows: DailyRow[] = [];
     for (let index = 0; index < days; index += 1) {
-      const row = byDay.get(new Date(stamp - index * DAY).toISOString().slice(0, 10));
+      const row = byDay.get(dayAt(index));
       if (row) rows.push(row);
     }
     return rows;
   };
+
+  // New members in a window = total now minus the total when the window started.
+  const deltaFor = (days: number) => {
+    const current = byDay.get(dayAt(0))?.members ?? 0;
+    const baseline = byDay.get(dayAt(days))?.members;
+    return baseline == null ? 0 : Math.max(0, current - baseline);
+  };
+  const deltas = Object.fromEntries(Object.keys(WINDOWS).map((key) => [key, deltaFor(WINDOWS[key as WindowKey])])) as Record<WindowKey, number>;
 
   const windows = Object.fromEntries(
     Object.entries(WINDOWS).map(([key, days]) => [key, regionCountsFromDays(windowRows(days))]),
@@ -64,19 +73,21 @@ async function readObservatory(): Promise<ObservatoryData> {
 
   const history: number[] = [];
   for (let index = HISTORY_DAYS - 1; index >= 0; index -= 1) {
-    history.push(windowRows(index + 1)[0]?.members ?? 0);
+    history.push(byDay.get(dayAt(index))?.members ?? 0);
   }
 
+  // Points cover every region seen in any window — the map's active window can differ from 7D.
   const points: ObservatoryData["points"] = {};
-  for (const { region, count } of windows["7D"]) {
-    const point = REGION_POINTS[region];
-    if (count && (point.lon || point.lat)) points[region] = { ...point, count };
+  for (const window of Object.values(windows)) {
+    for (const { region, count } of window) {
+      const point = REGION_POINTS[region];
+      if (count && (point.lon || point.lat) && !points[region]) points[region] = { ...point, count };
+    }
   }
 
-  const latest = windowRows(1)[0];
   return {
-    members: latest?.members ?? 0,
-    newMembers7d: windowRows(7).reduce((total, row) => total + row.new_members, 0),
+    members: byDay.get(dayAt(0))?.members ?? 0,
+    deltas,
     history,
     windows,
     points,
