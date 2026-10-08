@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { signUp } from "@/services/auth.service";
 import { sessionCookie } from "@/lib/auth/session";
 import { credentialsSchema } from "@/lib/validation/auth";
+import { geoFromRequest } from "@/lib/auth/geo";
+import { captureGeo } from "@/lib/db/observatory";
 
 export const runtime = "nodejs";
 
@@ -10,8 +12,14 @@ export async function POST(request: Request) {
   const parsed = credentialsSchema.safeParse({ email: form.get("email"), password: form.get("password") });
   if (!parsed.success) return NextResponse.redirect(new URL(`/signup?error=${encodeURIComponent(parsed.error.issues[0].message)}`, request.url), 303);
   try {
+    const session = await signUp(parsed.data.email, parsed.data.password);
+    try {
+      await captureGeo(session.userId, geoFromRequest(request), true);
+    } catch {
+      // Location is best-effort — never block a signup over it.
+    }
     const response = NextResponse.redirect(new URL("/tools", request.url), 303);
-    const cookie = await sessionCookie(await signUp(parsed.data.email, parsed.data.password));
+    const cookie = await sessionCookie(session);
     response.cookies.set(cookie.name, cookie.value, cookie.options);
     return response;
   } catch (error) {

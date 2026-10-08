@@ -7,7 +7,9 @@ export const credentialsSchema = z.object({
 
 export const tokenSchema = z.object({
   token: z.string().trim().min(1, "Please paste a token first.").max(8000),
-  tool: z.enum(["neo", "orbit", "backoffice"]).default("neo"),
+  // Neo Bank disabled — see migrations/020_drop_neo_bank.sql. Commented out, restore when re-enabling:
+  // tool: z.enum(["neo", "orbit", "backoffice"]).default("neo"),
+  tool: z.enum(["neo", "orbit", "backoffice"]).default("backoffice"),
 });
 
 export const toolLoginSchema = z.object({

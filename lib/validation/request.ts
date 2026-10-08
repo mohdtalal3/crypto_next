@@ -1,3 +1,3 @@
 import { z } from "zod";
 
-export const toolSchema = z.enum(["neo", "orbit"]).default("neo");
+export const toolSchema = z.enum(["neo", "orbit"]).default("orbit");

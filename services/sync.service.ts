@@ -1,10 +1,12 @@
 import "server-only";
 
-import { refreshTransactionSummary, upsertBackofficeAffiliates, upsertBackofficeProfile, upsertExAiBot, upsertLiveTrading, upsertOrbit, upsertOrbitPartnerProgram, upsertOrbitPartnerStatistics, upsertPartnerStats, upsertReferralBots, upsertTransactions, upsertUserInfo, upsertWallet, upsertZeusPro } from "@/lib/db/portal";
+// Neo Bank disabled — see migrations/020_drop_neo_bank.sql. Commented out, restore when re-enabling:
+// import { refreshTransactionSummary, upsertBackofficeAffiliates, upsertBackofficeProfile, upsertExAiBot, upsertLiveTrading, upsertOrbit, upsertOrbitPartnerProgram, upsertOrbitPartnerStatistics, upsertPartnerStats, upsertReferralBots, upsertTransactions, upsertUserInfo, upsertWallet, upsertZeusPro } from "@/lib/db/portal";
+import { upsertBackofficeAffiliates, upsertBackofficeProfile, upsertExAiBot, upsertOrbit, upsertOrbitPartnerProgram, upsertOrbitPartnerStatistics, upsertPartnerStats } from "@/lib/db/portal";
 import { ensureFirstClaim } from "@/services/claim.service";
 import { AppError } from "@/lib/utils/errors";
 import { fetchBackofficeAffiliates, fetchBackofficeProfile } from "@/scraping/backoffice";
-import { fetchNeoBank } from "@/scraping/neo-bank";
+// import { fetchNeoBank } from "@/scraping/neo-bank";
 import { fetchOrbitOne } from "@/scraping/orbitone";
 import { AurumUnauthorizedError } from "@/scraping/shared/http";
 import type { JsonObject, PortalSession, Tool } from "@/types";
@@ -43,6 +45,8 @@ export async function syncTool(session: PortalSession, tool: Tool) {
       } else if (rankStatistics) await upsertOrbitPartnerStatistics(session.userId, { rankStatistics });
       return { tool, transactions: 0 };
     }
+    // Neo Bank disabled — see migrations/020_drop_neo_bank.sql. Commented out, restore when re-enabling:
+    /*
     const data = await fetchNeoBank(token);
     if (data.userInfo) await upsertUserInfo(session.userId, data.userInfo);
     if (data.zeusPro) await upsertZeusPro(session.userId, data.zeusPro);
@@ -62,6 +66,9 @@ export async function syncTool(session: PortalSession, tool: Tool) {
       await upsertPartnerStats(session.userId, partner);
     }
     return { tool, transactions: written };
+    */
+    if (tool === "neo") throw new AppError("TOOL_DISABLED", "Neo Bank sync is disabled.", 400);
+    return { tool, transactions: 0 };
   } catch (error) {
     if (error instanceof AurumUnauthorizedError) throw new SyncUnauthorizedError(tool);
     throw error;

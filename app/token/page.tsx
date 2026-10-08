@@ -5,7 +5,9 @@ import type { Tool } from "@/types";
 export default async function TokenPage({ searchParams }: { searchParams: Promise<{ tool?: Tool; error?: string; step?: string }> }) {
   await requireSession();
   const { tool: given, error, step } = await searchParams;
-  const tool = given === "orbit" ? "orbit" : given === "backoffice" ? "backoffice" : "neo";
+  // Neo Bank disabled — see migrations/020_drop_neo_bank.sql. Commented out, restore when re-enabling:
+  // const tool = given === "orbit" ? "orbit" : given === "backoffice" ? "backoffice" : "neo";
+  const tool = given === "orbit" ? "orbit" : given === "neo" ? "neo" : "backoffice";
   const name = tool === "orbit" ? "OrbitOne" : tool === "backoffice" ? "Backoffice.aurum" : "Aurum";
   const timing = tool === "backoffice" ? "This sync usually finishes in under a minute." : "A complete scan takes <strong>3–5 minutes</strong>.";
   return <main className="center"><section className="card auth-card"><img className="logo" src="/logo.png" alt="D.A.R.A."/>

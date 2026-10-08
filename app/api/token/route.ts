@@ -12,7 +12,9 @@ export async function POST(request: Request) {
   if (!session) return NextResponse.redirect(new URL("/", request.url), 303);
   const form = await request.formData();
   const parsed = tokenSchema.safeParse({ tool: form.get("tool"), token: String(form.get("token") ?? "").replace(/^Bearer\s+/i, "") });
-  const tool = parsed.success ? parsed.data.tool : (form.get("tool") === "orbit" ? "orbit" : form.get("tool") === "backoffice" ? "backoffice" : "neo");
+  // Neo Bank disabled — see migrations/020_drop_neo_bank.sql. Commented out, restore when re-enabling:
+  // const tool = parsed.success ? parsed.data.tool : (form.get("tool") === "orbit" ? "orbit" : form.get("tool") === "backoffice" ? "backoffice" : "neo");
+  const tool = parsed.success ? parsed.data.tool : (form.get("tool") === "orbit" ? "orbit" : form.get("tool") === "neo" ? "neo" : "backoffice");
   if (!parsed.success) return NextResponse.redirect(new URL(`/token?tool=${tool}&error=${encodeURIComponent(parsed.error.issues[0].message)}`, request.url), 303);
   const transient = { ...session, aurumToken: tool === "neo" ? parsed.data.token : undefined, orbitToken: tool === "orbit" ? parsed.data.token : undefined, backofficeToken: tool === "backoffice" ? parsed.data.token : undefined };
   try {

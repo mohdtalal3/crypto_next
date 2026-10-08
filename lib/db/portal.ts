@@ -2,8 +2,10 @@ import "server-only";
 
 import { dbClient, authClient } from "@/lib/db/client";
 import { isPortalRole, STAFF_ROLES } from "@/lib/auth/roles";
-import { summarizeTransactions, type TickerAggregate } from "@/lib/utils/summary";
-import type { JsonObject, PortalRole, ReferralBot, Transaction } from "@/types";
+// Neo Bank disabled — see migrations/020_drop_neo_bank.sql. Commented out, restore when re-enabling:
+// import { summarizeTransactions, type TickerAggregate } from "@/lib/utils/summary";
+// import type { JsonObject, PortalRole, ReferralBot, Transaction } from "@/types";
+import type { JsonObject, PortalRole } from "@/types";
 
 const CHUNK = 500;
 const now = () => new Date().toISOString();
@@ -56,6 +58,8 @@ export async function setStaffActive(userId: string, active: boolean) {
   if (result.error) throw new Error(`Supabase profile update failed: ${result.error.message}`);
 }
 
+// Neo Bank disabled — see migrations/020_drop_neo_bank.sql. Commented out, restore when re-enabling:
+/*
 export async function transactionsFor(userId: string): Promise<Transaction[]> {
   const client = dbClient();
   const all: Transaction[] = [];
@@ -86,6 +90,7 @@ export async function upsertTransactions(userId: string, rows: JsonObject[]) {
   }
   return written;
 }
+*/
 
 async function upsertDocument(table: string, userId: string, data: JsonObject) {
   const result = await dbClient().from(table).upsert({ user_id: userId, data, updated_at: now() });
@@ -98,21 +103,23 @@ async function documentFor(table: string, userId: string): Promise<JsonObject | 
   return row?.data ?? null;
 }
 
-export const userInfoFor = (userId: string) => documentFor("user_info", userId);
+// Neo Bank disabled — see migrations/020_drop_neo_bank.sql:
+// export const userInfoFor = (userId: string) => documentFor("user_info", userId);
 export const partnerStatsFor = (userId: string) => documentFor("partner_stats", userId);
-export const zeusProFor = (userId: string) => documentFor("zeus_pro", userId);
-export const walletFor = (userId: string) => documentFor("wallet", userId);
-export const liveTradingFor = (userId: string) => documentFor("live_trading", userId);
+// export const zeusProFor = (userId: string) => documentFor("zeus_pro", userId);
+// export const walletFor = (userId: string) => documentFor("wallet", userId);
+// export const liveTradingFor = (userId: string) => documentFor("live_trading", userId);
 export const orbitFor = (userId: string) => documentFor("orbit", userId);
 export const exAiBotFor = (userId: string) => documentFor("ex_ai_bot", userId);
 export const orbitPartnerProgramFor = (userId: string) => documentFor("orbit_partner_program", userId);
 export const backofficeAffiliatesFor = (userId: string) => documentFor("backoffice_affiliates", userId);
 export const backofficeProfileFor = (userId: string) => documentFor("backoffice_profile", userId);
-export const upsertUserInfo = (userId: string, data: JsonObject) => upsertDocument("user_info", userId, data);
+// Neo Bank disabled — see migrations/020_drop_neo_bank.sql:
+// export const upsertUserInfo = (userId: string, data: JsonObject) => upsertDocument("user_info", userId, data);
 export const upsertPartnerStats = (userId: string, data: JsonObject) => upsertDocument("partner_stats", userId, data);
-export const upsertZeusPro = (userId: string, data: JsonObject) => upsertDocument("zeus_pro", userId, data);
-export const upsertWallet = (userId: string, data: JsonObject) => upsertDocument("wallet", userId, data);
-export const upsertLiveTrading = (userId: string, data: JsonObject) => upsertDocument("live_trading", userId, data);
+// export const upsertZeusPro = (userId: string, data: JsonObject) => upsertDocument("zeus_pro", userId, data);
+// export const upsertWallet = (userId: string, data: JsonObject) => upsertDocument("wallet", userId, data);
+// export const upsertLiveTrading = (userId: string, data: JsonObject) => upsertDocument("live_trading", userId, data);
 export const upsertOrbit = (userId: string, data: JsonObject) => upsertDocument("orbit", userId, data);
 export const upsertExAiBot = (userId: string, data: JsonObject) => upsertDocument("ex_ai_bot", userId, data);
 export const upsertOrbitPartnerProgram = (userId: string, data: JsonObject) => upsertDocument("orbit_partner_program", userId, data);
@@ -162,6 +169,8 @@ export async function orbitPartnerStatisticsFor(userId: string): Promise<JsonObj
   };
 }
 
+// Neo Bank disabled — see migrations/020_drop_neo_bank.sql. Commented out, restore when re-enabling:
+/*
 function periodSeconds(value: unknown) {
   if (!value || typeof value !== "object") return null;
   const source = value as Record<string, unknown>;
@@ -234,3 +243,4 @@ export async function transactionSummaryEveryone(): Promise<{ people: number; tr
   const tickers = [...merged.entries()].map(([ticker, s]) => ({ ticker, ...s })).sort((a, b) => b.count - a.count);
   return { people: people.size, transactions: tickers.reduce((total, t) => total + t.count, 0), tickers };
 }
+*/
