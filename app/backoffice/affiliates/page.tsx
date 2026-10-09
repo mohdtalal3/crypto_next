@@ -1,5 +1,6 @@
 import { AffiliatesView } from "@/components/backoffice/AffiliatesView";
 import { BackofficeSidebar } from "@/components/layout/BackofficeSidebar";
+import { BackLink } from "@/components/layout/BackLink";
 import { viewAs } from "@/lib/auth/guards";
 import { backofficeAffiliatesFor, partnerStatsFor } from "@/lib/db/portal";
 import { redirect } from "next/navigation";
@@ -9,5 +10,5 @@ export default async function BackofficeAffiliates({ searchParams }: { searchPar
   const [snapshot, legacy] = await Promise.all([backofficeAffiliatesFor(userId), partnerStatsFor(userId)]);
   const data = snapshot ?? (legacy && (legacy.affiliateStats || legacy.partners) ? legacy : null);
   if (!data && !viewing) redirect("/token?tool=backoffice");
-  return <div className="layout"><BackofficeSidebar active="affiliates" viewing={viewing}/><main className="wrap"><header className="topbar"><div><h1>Affiliates</h1><p className="subtitle">Affiliate stats and partner directory — synced from Aurum.</p></div></header>{data ? <AffiliatesView data={data}/> : <p className="card empty">No affiliate data yet — sync Neo Bank to pull it from Aurum.</p>}</main></div>;
+  return <div className="layout"><BackofficeSidebar active="affiliates" viewing={viewing}/><main className="wrap"><header className="topbar"><div><h1>Affiliates</h1><p className="subtitle">Affiliate stats and partner directory — synced from Aurum.</p></div>{viewing ? <BackLink href="/admin/users" label="Back to people"/> : <BackLink/>}</header>{data ? <AffiliatesView data={data}/> : <p className="card empty">No affiliate data yet — sync Neo Bank to pull it from Aurum.</p>}</main></div>;
 }

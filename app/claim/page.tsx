@@ -1,4 +1,5 @@
 import { ClaimSidebar } from "@/components/layout/ClaimSidebar";
+import { BackLink } from "@/components/layout/BackLink";
 import { requireSession } from "@/lib/auth/guards";
 import { claimsFor } from "@/services/claim.service";
 
@@ -6,7 +7,7 @@ export default async function ClaimDashboard({ searchParams }: { searchParams: P
   const session = await requireSession();
   const [claims, { error }] = await Promise.all([claimsFor(session.userId), searchParams]);
   return <div className="layout"><ClaimSidebar active="claims"/><main className="wrap">
-    <header className="topbar"><div><h1>Claims</h1><p className="subtitle">{claims.length} claim number{claims.length === 1 ? "" : "s"} · auto-generated when you sync Backoffice.aurum (Aurum-[pretty ID]-MCA001, 002, 003…)</p></div></header>
+    <header className="topbar"><div><h1>Claims</h1><p className="subtitle">{claims.length} claim number{claims.length === 1 ? "" : "s"} · auto-generated when you sync Backoffice.aurum (Aurum-[pretty ID]-MCA001, 002, 003…)</p></div><BackLink/></header>
     {error && <p className="alert">⚠️ {error}</p>}
     <section className="card table-card"><table><thead><tr><th>Claim number</th><th>Pretty ID</th><th>Created</th></tr></thead><tbody>
       {claims.map((claim) => <tr key={claim.id}>

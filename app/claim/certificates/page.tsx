@@ -1,4 +1,5 @@
 import { ClaimSidebar } from "@/components/layout/ClaimSidebar";
+import { BackLink } from "@/components/layout/BackLink";
 import { buildExAiCertificateData, buildPartnerCertificateData, depositShortId, parseExAi } from "@/lib/utils/certificate-data";
 import { requireSession } from "@/lib/auth/guards";
 import { exAiBotFor, orbitPartnerProgramFor } from "@/lib/db/portal";
@@ -22,7 +23,7 @@ export default async function Certificates({ searchParams }: { searchParams: Pro
     if (certificate) rows.push({ name: "Partner Balance Claim Certificate", status: certificate.status, href: "/claim/certificates/partner/download" });
   }
   return <div className="layout"><ClaimSidebar active="certificates"/><main className="wrap">
-    <header className="topbar"><div><h1>Certificates</h1><p className="subtitle">Your claim certificates — download any of them as a PDF.</p></div></header>
+    <header className="topbar"><div><h1>Certificates</h1><p className="subtitle">Your claim certificates — download any of them as a PDF.</p></div><BackLink/></header>
     {error && <p className="alert">⚠️ {error}</p>}
     <section className="card table-card"><table><thead><tr><th>Certificate</th><th>Status</th><th>Download</th></tr></thead><tbody>
       {rows.map((row) => <tr key={row.href}>

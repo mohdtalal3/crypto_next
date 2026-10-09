@@ -1,4 +1,5 @@
 import { AdminSidebar } from "@/components/layout/AdminSidebar";
+import { BackLink } from "@/components/layout/BackLink";
 import { requireFounder } from "@/lib/auth/guards";
 import { roleLabel } from "@/lib/auth/roles";
 import { portalPeople, staffRoles } from "@/services/admin.service";
@@ -9,7 +10,7 @@ export default async function AdminStaff({ searchParams }: { searchParams: Promi
   const [staff, people, { error, created, updated }] = await Promise.all([staffList(), portalPeople(), searchParams]);
   const emails = new Map(people.map((p) => [p.id, p.email]));
   return <div className="layout"><AdminSidebar active="staff" founder/><main className="wrap">
-    <header className="topbar"><div><h1>Staff access</h1><p className="subtitle">Create logins for CEO, COO and other staff — and revoke or restore their access.</p></div></header>
+    <header className="topbar"><div><h1>Staff access</h1><p className="subtitle">Create logins for CEO, COO and other staff — and revoke or restore their access.</p></div><BackLink/></header>
     {error && <p className="alert">⚠️ {error}</p>}
     {created && <p className="alert in">Login created.</p>}
     {updated && <p className="alert in">Staff member updated.</p>}

@@ -12,7 +12,7 @@ export function AdminSidebar({ active, founder }: { active: "overview" | "people
       <a href="/admin/overview" onClick={close} className={active === "overview" ? "active" : ""}>Overview</a>
       <a href="/admin/users" onClick={close} className={active === "people" ? "active" : ""}>People</a>
       {founder && <a href="/admin" onClick={close} className={active === "staff" ? "active" : ""}>Staff access</a>}
-      <a href="/tools" onClick={close}>🧭 All tools</a>
+      <a href="/" onClick={close}>🏠 Home</a><a href="/tools" onClick={close} className="crumb">🧭 All tools</a>
     </nav><form action="/api/auth/logout" method="post"><button className="btn ghost" type="submit">Log out</button></form></aside>
   </>;
 }
