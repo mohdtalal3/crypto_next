@@ -1,5 +1,6 @@
 import { AdminSidebar } from "@/components/layout/AdminSidebar";
 import { BackLink } from "@/components/layout/BackLink";
+import { PasswordInput } from "@/components/auth/PasswordInput";
 import { requireFounder } from "@/lib/auth/guards";
 import { roleLabel } from "@/lib/auth/roles";
 import { portalPeople, staffRoles } from "@/services/admin.service";
@@ -18,7 +19,7 @@ export default async function AdminStaff({ searchParams }: { searchParams: Promi
       <h2>Create a staff login</h2>
       <form action="/api/admin/staff" method="post" className="filters">
         <input className="text-input" type="email" name="email" placeholder="Email" required/>
-        <input className="text-input" type="password" name="password" placeholder="Password (min 8 characters)" minLength={8} required/>
+        <PasswordInput placeholder="Password (min 8 characters)"/>
         <select name="role" defaultValue="ceo">{staffRoles.map((role) => <option key={role} value={role}>{roleLabel[role]}</option>)}</select>
         <button className="btn primary" type="submit">Create login</button>
       </form>

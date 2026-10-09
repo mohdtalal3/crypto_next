@@ -104,3 +104,9 @@
 .tools-hero .subtitle{margin:0}
 .tools{margin-top:34px}
 @media(max-width:560px){.tools-page{padding:0 16px 44px}.site-header{margin:0 -16px;padding:6px 16px}.tools-hero{padding:40px 0 4px}.tools-hero h1{font-size:30px}.tools{grid-template-columns:1fr}}
+
+/* Password field with show/hide toggle. */
+.password-field{position:relative;margin:7px 0}
+.password-field .text-input{margin:0;padding-right:78px}
+.password-toggle{position:absolute;top:50%;right:7px;transform:translateY(-50%);padding:6px 10px;border:0;border-radius:7px;background:transparent;color:var(--muted);font:600 12px inherit;cursor:pointer}
+.password-toggle:hover{color:var(--text);background:#17171c}
