@@ -18,6 +18,17 @@ export interface ObservatoryData {
   points: Record<string, { lon: number; lat: number; labelDy: number; count: number }>;
 }
 
+export interface ClaimableBalance { source: string; total: number; members: number }
+
+/** Pure read of the claimable_balances rows the scheduled job maintains
+    (see migrations/022_claimable_balances.sql). */
+export async function claimableBalances(): Promise<ClaimableBalance[]> {
+  const stored = await dbClient().from("claimable_balances").select("source, total, members").order("source");
+  if (stored.error) throw new Error(`Supabase claimable balances read failed: ${stored.error.message}`);
+  return (stored.data as Array<{ source: string; total: string | number; members: number }>)
+    .map((row) => ({ source: row.source, total: Number(row.total), members: row.members }));
+}
+
 interface DailyRow { day: string; members: number; by_country: Record<string, number> }
 
 /** Stores a member's country on their profile at signup. */

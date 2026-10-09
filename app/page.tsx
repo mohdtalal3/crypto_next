@@ -1,6 +1,7 @@
-import { observatoryData, type ObservatoryData } from "@/lib/db/observatory";
+import { claimableBalances, observatoryData, type ClaimableBalance, type ObservatoryData } from "@/lib/db/observatory";
 import { mapPaths, regionPositions } from "@/lib/map";
 import { ObservatoryBoard } from "@/components/observatory/ObservatoryBoard";
+import { number } from "@/lib/utils/format";
 
 // Public aggregates rebuild at most once per minute; every other visitor is
 // served from the CDN cache regardless of traffic.
@@ -10,9 +11,37 @@ function emptyData(): ObservatoryData {
   return { members: 0, deltas: { "24H": 0, "7D": 0, "30D": 0 }, history: [], windows: { "24H": [], "7D": [], "30D": [] }, points: {} };
 }
 
+const BALANCE_CARDS: Record<string, { label: string; badge: string; featured?: boolean }> = {
+  ex_ai_bot: { label: "EX-AI Bot · Claimable Balance", badge: "EX-AI", featured: true },
+  main_wallet: { label: "Main Wallet Balance", badge: "Claimable" },
+  partner_wallet: { label: "Partner Program Wallet Balance", badge: "Claimable" },
+};
+
+function BalanceSources({ balances }: { balances: ClaimableBalance[] }) {
+  return <section className="card obs-balances">
+    <div className="obs-balances-head">
+      <div><h2>Claimable Balance Sources</h2><p>EX-AI Bot, Main Wallet, and Partner Program Wallet are the claimable balances in this view. Additional product activity is coming soon.</p></div>
+      <span className="obs-guardian-tag">Current claimable balances</span>
+    </div>
+    <div className="obs-balance-grid">
+      {Object.entries(BALANCE_CARDS).map(([source, card]) => {
+        const balance = balances.find((entry) => entry.source === source);
+        const total = balance?.total ?? 0;
+        return <article className={`obs-balance-card ${card.featured ? "featured" : ""}`} key={source}>
+          <span className="obs-balance-status">{card.badge}</span>
+          <div className="obs-balance-label">{card.label}</div>
+          <div className="obs-balance-value">{total > 0 ? <>${number(total, 2)} <em>USDT</em></> : <>—</>}</div>
+          <div className="obs-balance-note">{balance && balance.members > 0 ? `${balance.members.toLocaleString("en-US")} members holding` : "Claimable balance source"}</div>
+        </article>;
+      })}
+    </div>
+  </section>;
+}
+
 export default async function Observatory() {
-  const [data, map, positions] = await Promise.all([
+  const [data, balances, map, positions] = await Promise.all([
     observatoryData().catch(() => emptyData()),
+    claimableBalances().catch(() => []),
     Promise.resolve(mapPaths()),
     Promise.resolve(regionPositions()),
   ]);
@@ -32,6 +61,8 @@ export default async function Observatory() {
     </section>
 
     <ObservatoryBoard data={data} map={map} positions={positions}/>
+
+    <BalanceSources balances={balances}/>
 
     <footer className="obs-foot">
       <a href="/login">Member log in</a> · <a href="/signup">Create account</a>
