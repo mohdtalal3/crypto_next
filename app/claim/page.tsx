@@ -16,7 +16,7 @@ export default async function ClaimDashboard({ searchParams }: { searchParams: P
           <div className="card stat"><span className="stat-label">EX-AI Bot deposits</span><span className="stat-value">{number(balances.exAiBot, 2)} <small>USDT</small></span></div>
           <div className="card stat"><span className="stat-label">Main wallet</span><span className="stat-value">{number(balances.mainWallet, 2)} <small>USDT</small></span></div>
           <div className="card stat"><span className="stat-label">Partner wallet</span><span className="stat-value">{number(balances.partnerWallet, 2)} <small>USDT</small></span></div>
-          <div className="card stat"><span className="stat-label">Total claimable</span><span className="stat-value">{number(balances.total, 2)} <small>USDT</small></span></div>
+          <div className="card stat gold"><span className="stat-label">Total claimable</span><span className="stat-value">{number(balances.total, 2)} <small>USDT</small></span></div>
         </section>
       : <p className="hint">Your claimable balances appear here after your first OrbitOne sync.</p>}
     <section className="card table-card"><table><thead><tr><th>Claim number</th><th>Pretty ID</th><th>Created</th></tr></thead><tbody>

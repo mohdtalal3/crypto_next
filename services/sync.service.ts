@@ -58,7 +58,7 @@ export async function syncTool(session: PortalSession, tool: Tool) {
       const exAiRoot = record(record(investments).result ?? investments);
       const exAiBalance = record(exAiRoot.balance ?? exAiRoot.depositBalance ?? exAiRoot.summary);
       const overview = record(orbitData.overview);
-      await upsertUserBalances(session.userId, {
+      await upsertUserBalances(session.userId, session.email, {
         exAiBot: numeric(exAiBalance.totalDeposit),
         mainWallet: numeric(record(overview.balance).total),
         partnerWallet: numeric(record(partners).partnerBalance),

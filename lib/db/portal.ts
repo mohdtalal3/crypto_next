@@ -41,6 +41,14 @@ export async function roleFor(userId: string): Promise<PortalRole> {
   return isPortalRole(data.role) ? data.role : "user";
 }
 
+/** Keeps the People page's "Last login" fresh at each sign-in; see
+    migrations/024_profiles_directory.sql. Email is not written here — it never
+    changes, so the migration's one-time backfill is authoritative. */
+export async function touchProfile(userId: string) {
+  const result = await dbClient().from("profiles").update({ last_sign_in_at: now(), updated_at: now() }).eq("user_id", userId);
+  if (result.error) throw new Error(`Supabase profile touch failed: ${result.error.message}`);
+}
+
 export async function activeFor(userId: string): Promise<boolean> {
   const { data, error } = await dbClient().from("profiles").select("active").eq("user_id", userId).maybeSingle();
   if (error) throw new Error(`Supabase profile lookup failed: ${error.message}`);
@@ -56,10 +64,10 @@ export async function emailFor(userId: string): Promise<string> {
   }
 }
 
-export async function staffList(): Promise<Array<{ user_id: string; role: PortalRole; active: boolean; created_at: string }>> {
-  const result = await dbClient().from("profiles").select("user_id, role, active, created_at").in("role", [...STAFF_ROLES]).order("created_at");
-  const rows = await assertResult(result) as Array<{ user_id: string; role: string; active: boolean | null; created_at: string }>;
-  return rows.map((row) => ({ user_id: row.user_id, role: isPortalRole(row.role) ? row.role : "user", active: row.active !== false, created_at: row.created_at }));
+export async function staffList(): Promise<Array<{ user_id: string; email: string | null; role: PortalRole; active: boolean; created_at: string }>> {
+  const result = await dbClient().from("profiles").select("user_id, role, active, created_at, email").in("role", [...STAFF_ROLES]).order("created_at");
+  const rows = await assertResult(result) as Array<{ user_id: string; email: string | null; role: string; active: boolean | null; created_at: string }>;
+  return rows.map((row) => ({ user_id: row.user_id, email: row.email, role: isPortalRole(row.role) ? row.role : "user", active: row.active !== false, created_at: row.created_at }));
 }
 
 export async function setStaffRole(userId: string, role: Exclude<PortalRole, "user">) {
@@ -209,10 +217,11 @@ export function orbitPartnerStatisticsFor(userId: string): Promise<JsonObject | 
 export interface UserBalances { exAiBot: number; mainWallet: number; partnerWallet: number; total: number }
 
 /** Written on every OrbitOne sync (see services/sync.service.ts); the schema is
-    migrations/023_user_balances.sql. */
-export async function upsertUserBalances(userId: string, balances: { exAiBot: number; mainWallet: number; partnerWallet: number }) {
+    migrations/023_user_balances.sql. Email is denormalized from auth.users so
+    admin listings can paginate and search without touching Supabase Auth. */
+export async function upsertUserBalances(userId: string, email: string, balances: { exAiBot: number; mainWallet: number; partnerWallet: number }) {
   const result = await dbClient().from("user_balances").upsert({
-    user_id: userId, ex_ai_bot: balances.exAiBot, main_wallet: balances.mainWallet,
+    user_id: userId, email, ex_ai_bot: balances.exAiBot, main_wallet: balances.mainWallet,
     partner_wallet: balances.partnerWallet, updated_at: now(),
   });
   if (result.error) throw new Error(`Supabase user balances upsert failed: ${result.error.message}`);
@@ -233,6 +242,27 @@ export function userBalancesFor(userId: string): Promise<UserBalances | null> {
       };
     }, ["user_balances", userId], { tags: [`user_balances:${userId}`] })(),
   );
+}
+
+const BALANCE_PAGE_SIZE = 20;
+
+export type BalanceRow = { userId: string; email: string } & UserBalances;
+
+/** One server-side page of member balances, largest total first, optionally
+    filtered by email — the admin balances dashboard. */
+export async function userBalancesPage(page: number, search: string): Promise<{ rows: BalanceRow[]; total: number }> {
+  const client = dbClient();
+  const from = (page - 1) * BALANCE_PAGE_SIZE;
+  let query = client.from("user_balances").select("user_id, email, ex_ai_bot, main_wallet, partner_wallet, total", { count: "exact" });
+  if (search) query = query.ilike("email", `%${search}%`);
+  const result = await query.order("total", { ascending: false }).range(from, from + BALANCE_PAGE_SIZE - 1);
+  if (result.error) throw new Error(`Supabase user balances page failed: ${result.error.message}`);
+  const rows = (result.data as Array<{ user_id: string; email: string | null; ex_ai_bot: string | number; main_wallet: string | number; partner_wallet: string | number; total: string | number }>)
+    .map((row) => ({
+      userId: row.user_id, email: row.email ?? row.user_id, exAiBot: Number(row.ex_ai_bot),
+      mainWallet: Number(row.main_wallet), partnerWallet: Number(row.partner_wallet), total: Number(row.total),
+    }));
+  return { rows, total: result.count ?? 0 };
 }
 
 // Neo Bank disabled — see migrations/020_drop_neo_bank.sql. Commented out, restore when re-enabling:

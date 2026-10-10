@@ -1,7 +1,7 @@
 import "server-only";
 
 import { authClient } from "@/lib/db/client";
-import { activeFor, roleFor } from "@/lib/db/portal";
+import { activeFor, roleFor, touchProfile } from "@/lib/db/portal";
 import { isStaff } from "@/lib/auth/roles";
 import { AppError } from "@/lib/utils/errors";
 import type { PortalSession } from "@/types";
@@ -9,6 +9,11 @@ import type { PortalSession } from "@/types";
 async function sessionFor(id: string, email: string): Promise<PortalSession> {
   const role = await roleFor(id);
   if (isStaff(role) && !(await activeFor(id))) throw new AppError("ACCESS_REVOKED", "Your portal access has been revoked.", 403);
+  try {
+    await touchProfile(id);
+  } catch {
+    // Directory freshness is best-effort — never block a login over it.
+  }
   return { userId: id, email, role };
 }
 

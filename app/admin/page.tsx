@@ -3,13 +3,12 @@ import { BackLink } from "@/components/layout/BackLink";
 import { PasswordInput } from "@/components/auth/PasswordInput";
 import { requireFounder } from "@/lib/auth/guards";
 import { roleLabel } from "@/lib/auth/roles";
-import { portalPeople, staffRoles } from "@/services/admin.service";
+import { staffRoles } from "@/services/admin.service";
 import { staffList } from "@/lib/db/portal";
 
 export default async function AdminStaff({ searchParams }: { searchParams: Promise<{ error?: string; created?: string; updated?: string }> }) {
   const session = await requireFounder();
-  const [staff, people, { error, created, updated }] = await Promise.all([staffList(), portalPeople(), searchParams]);
-  const emails = new Map(people.map((p) => [p.id, p.email]));
+  const [staff, { error, created, updated }] = await Promise.all([staffList(), searchParams]);
   return <div className="layout"><AdminSidebar active="staff" founder/><main className="wrap">
     <header className="topbar"><div><h1>Staff access</h1><p className="subtitle">Create logins for CEO, COO and other staff — and revoke or restore their access.</p></div><BackLink/></header>
     {error && <p className="alert">⚠️ {error}</p>}
@@ -26,7 +25,7 @@ export default async function AdminStaff({ searchParams }: { searchParams: Promi
     </section>
     <section className="card table-card"><table><thead><tr><th>Staff member</th><th>Role</th><th>Status</th><th>Change role</th><th>Access</th></tr></thead><tbody>
       {staff.map((member) => <tr key={member.user_id}>
-        <td>{emails.get(member.user_id) ?? member.user_id.slice(0, 8)}</td>
+        <td>{member.email ?? member.user_id.slice(0, 8)}</td>
         <td><span className="badge">{roleLabel[member.role]}</span></td>
         <td><span className={`badge ${member.active ? "done" : "pending"}`}>{member.active ? "Active" : "Revoked"}</span></td>
         <td>
