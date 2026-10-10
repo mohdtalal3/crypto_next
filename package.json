@@ -2,48 +2,11 @@
   "name": "aurum-portal",
   "version": "1.0.0",
   "private": true,
-  "main": "electron/main.js",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "tsc --noEmit",
-    "electron:dev": "electron .",
-    "electron:start": "npm run build && electron .",
-    "dist": "npm run build && electron-builder --mac"
-  },
-  "build": {
-    "appId": "foundation.aurum.portal",
-    "productName": "Aurum Portal",
-    "files": [
-      "electron/**/*",
-      "package.json"
-    ],
-    "extraResources": [
-      {
-        "from": ".next/standalone",
-        "to": "app"
-      },
-      {
-        "from": ".next/static",
-        "to": "app/.next/static"
-      },
-      {
-        "from": "public",
-        "to": "app/public"
-      },
-      {
-        "from": ".env",
-        "to": "app/.env"
-      }
-    ],
-    "mac": {
-      "category": "public.app-category.finance",
-      "target": [
-        "dmg",
-        "zip"
-      ]
-    }
+    "lint": "tsc --noEmit"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",
@@ -67,9 +30,5 @@
     "@types/react-dom": "^19.1.2",
     "@types/topojson-client": "^3.1.5",
     "typescript": "^5.8.3"
-  },
-  "optionalDependencies": {
-    "electron": "^44.4.4",
-    "electron-builder": "^26.15.3"
   }
 }
