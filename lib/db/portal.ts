@@ -1,5 +1,6 @@
 import "server-only";
 
+import { revalidateTag, unstable_cache } from "next/cache";
 import { dbClient, authClient } from "@/lib/db/client";
 import { isPortalRole, STAFF_ROLES } from "@/lib/auth/roles";
 // Neo Bank disabled — see migrations/020_drop_neo_bank.sql. Commented out, restore when re-enabling:
@@ -95,25 +96,37 @@ export async function upsertTransactions(userId: string, rows: JsonObject[]) {
 async function upsertDocument(table: string, userId: string, data: JsonObject) {
   const result = await dbClient().from(table).upsert({ user_id: userId, data, updated_at: now() });
   if (result.error) throw new Error(`Supabase ${table} upsert failed: ${result.error.message}`);
+  revalidateTag(`${table}:${userId}`);
 }
 
 async function documentFor(table: string, userId: string): Promise<JsonObject | null> {
+  console.log(`[cache-check] DB read: ${table} / ${userId}`); // TEMPORARY — remove after verifying cache
   const result = await dbClient().from(table).select("data").eq("user_id", userId).maybeSingle();
   const row = await assertResult(result) as { data?: JsonObject } | null;
   return row?.data ?? null;
 }
 
+// Document reads are cached per user and table; the matching upsert invalidates
+// the tag, so a cached value is only ever replaced when its data is rewritten.
+function cachedDocumentFor(table: string, userId: string): Promise<JsonObject | null> {
+  return unstable_cache(
+    () => documentFor(table, userId),
+    ["document", table, userId],
+    { tags: [`${table}:${userId}`] },
+  )();
+}
+
 // Neo Bank disabled — see migrations/020_drop_neo_bank.sql:
 // export const userInfoFor = (userId: string) => documentFor("user_info", userId);
-export const partnerStatsFor = (userId: string) => documentFor("partner_stats", userId);
+export const partnerStatsFor = (userId: string) => cachedDocumentFor("partner_stats", userId);
 // export const zeusProFor = (userId: string) => documentFor("zeus_pro", userId);
 // export const walletFor = (userId: string) => documentFor("wallet", userId);
 // export const liveTradingFor = (userId: string) => documentFor("live_trading", userId);
-export const orbitFor = (userId: string) => documentFor("orbit", userId);
-export const exAiBotFor = (userId: string) => documentFor("ex_ai_bot", userId);
-export const orbitPartnerProgramFor = (userId: string) => documentFor("orbit_partner_program", userId);
-export const backofficeAffiliatesFor = (userId: string) => documentFor("backoffice_affiliates", userId);
-export const backofficeProfileFor = (userId: string) => documentFor("backoffice_profile", userId);
+export const orbitFor = (userId: string) => cachedDocumentFor("orbit", userId);
+export const exAiBotFor = (userId: string) => cachedDocumentFor("ex_ai_bot", userId);
+export const orbitPartnerProgramFor = (userId: string) => cachedDocumentFor("orbit_partner_program", userId);
+export const backofficeAffiliatesFor = (userId: string) => cachedDocumentFor("backoffice_affiliates", userId);
+export const backofficeProfileFor = (userId: string) => cachedDocumentFor("backoffice_profile", userId);
 // Neo Bank disabled — see migrations/020_drop_neo_bank.sql:
 // export const upsertUserInfo = (userId: string, data: JsonObject) => upsertDocument("user_info", userId, data);
 export const upsertPartnerStats = (userId: string, data: JsonObject) => upsertDocument("partner_stats", userId, data);
@@ -133,6 +146,7 @@ export async function upsertBackofficeProfile(userId: string, data: JsonObject) 
     data, updated_at: now(),
   });
   if (result.error) throw new Error(`Supabase backoffice profile upsert failed: ${result.error.message}`);
+  revalidateTag(`backoffice_profile:${userId}`);
 }
 function jsonRows(value: unknown): JsonObject[] {
   return Array.isArray(value) ? value.filter((item): item is JsonObject => Boolean(item) && typeof item === "object" && !Array.isArray(item)) : [];
@@ -156,17 +170,20 @@ export async function upsertOrbitPartnerStatistics(userId: string, source: JsonO
     rank_statistics: source.rankStatistics ?? {}, updated_at: now(),
   });
   if (result.error) throw new Error(`Supabase OrbitOne partner statistics upsert failed: ${result.error.message}`);
+  revalidateTag(`orbit_partner_statistics:${userId}`);
 }
 
-export async function orbitPartnerStatisticsFor(userId: string): Promise<JsonObject | null> {
-  const result = await dbClient().from("orbit_partner_statistics").select("*").eq("user_id", userId).maybeSingle();
-  const row = await assertResult(result) as Record<string, unknown> | null;
-  if (!row) return null;
-  return {
-    inviterName: row.inviter_name, inviterPrettyId: row.inviter_pretty_id,
-    ownPrettyId: row.my_pretty_id, total: row.total, search: row.search, referrals: row.referrals,
-    referralsLine: row.referrals_line, rankStatistics: row.rank_statistics,
-  };
+export function orbitPartnerStatisticsFor(userId: string): Promise<JsonObject | null> {
+  return unstable_cache(async () => {
+    const result = await dbClient().from("orbit_partner_statistics").select("*").eq("user_id", userId).maybeSingle();
+    const row = await assertResult(result) as Record<string, unknown> | null;
+    if (!row) return null;
+    return {
+      inviterName: row.inviter_name, inviterPrettyId: row.inviter_pretty_id,
+      ownPrettyId: row.my_pretty_id, total: row.total, search: row.search, referrals: row.referrals,
+      referralsLine: row.referrals_line, rankStatistics: row.rank_statistics,
+    };
+  }, ["orbit_partner_statistics", userId], { tags: [`orbit_partner_statistics:${userId}`] })();
 }
 
 // Neo Bank disabled — see migrations/020_drop_neo_bank.sql. Commented out, restore when re-enabling:
