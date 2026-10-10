@@ -2,7 +2,7 @@ import "server-only";
 
 // Neo Bank disabled — see migrations/020_drop_neo_bank.sql. Commented out, restore when re-enabling:
 // import { refreshTransactionSummary, upsertBackofficeAffiliates, upsertBackofficeProfile, upsertExAiBot, upsertLiveTrading, upsertOrbit, upsertOrbitPartnerProgram, upsertOrbitPartnerStatistics, upsertPartnerStats, upsertReferralBots, upsertTransactions, upsertUserInfo, upsertWallet, upsertZeusPro } from "@/lib/db/portal";
-import { upsertBackofficeAffiliates, upsertBackofficeProfile, upsertExAiBot, upsertOrbit, upsertOrbitPartnerProgram, upsertOrbitPartnerStatistics, upsertPartnerStats } from "@/lib/db/portal";
+import { upsertBackofficeAffiliates, upsertBackofficeProfile, upsertExAiBot, upsertOrbit, upsertOrbitPartnerProgram, upsertOrbitPartnerStatistics, upsertPartnerStats, upsertUserBalances } from "@/lib/db/portal";
 import { ensureFirstClaim } from "@/services/claim.service";
 import { AppError } from "@/lib/utils/errors";
 import { fetchBackofficeAffiliates, fetchBackofficeProfile } from "@/scraping/backoffice";
@@ -12,6 +12,14 @@ import { AurumUnauthorizedError } from "@/scraping/shared/http";
 import type { JsonObject, PortalSession, Tool } from "@/types";
 
 const toolName = (tool: Tool) => (tool === "orbit" ? "OrbitOne" : tool === "backoffice" ? "Backoffice.aurum" : "Aurum");
+
+// Balance strings arrive space-formatted ("4 650.68", sometimes with
+// non-breaking spaces) — mirrors the stripping in migrations/022 and 023.
+const record = (value: unknown): Record<string, unknown> => value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
+const numeric = (value: unknown) => {
+  const parsed = Number(String(value ?? "").replace(/[\s,\u00a0]/g, ""));
+  return Number.isFinite(parsed) ? parsed : 0;
+};
 
 export class SyncUnauthorizedError extends AppError {
   constructor(tool: Tool) {
@@ -43,6 +51,18 @@ export async function syncTool(session: PortalSession, tool: Tool) {
       if (partnerReferrals) {
         await upsertOrbitPartnerStatistics(session.userId, { ...partnerReferrals, ...(rankStatistics ? { rankStatistics } : {}) } as JsonObject);
       } else if (rankStatistics) await upsertOrbitPartnerStatistics(session.userId, { rankStatistics });
+      // Per-user claimable balances (migrations/023_user_balances.sql), kept in
+      // step with the documents this sync just rewrote. Sources mirror the
+      // refresh_claimable_balances job: ex_ai_bot balance.totalDeposit, orbit
+      // overview.balance.total, orbit_partner_program partnerBalance.
+      const exAiRoot = record(record(investments).result ?? investments);
+      const exAiBalance = record(exAiRoot.balance ?? exAiRoot.depositBalance ?? exAiRoot.summary);
+      const overview = record(orbitData.overview);
+      await upsertUserBalances(session.userId, {
+        exAiBot: numeric(exAiBalance.totalDeposit),
+        mainWallet: numeric(record(overview.balance).total),
+        partnerWallet: numeric(record(partners).partnerBalance),
+      });
       return { tool, transactions: 0 };
     }
     // Neo Bank disabled — see migrations/020_drop_neo_bank.sql. Commented out, restore when re-enabling:

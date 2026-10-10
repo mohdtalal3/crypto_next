@@ -13,7 +13,8 @@ function emptyData(): ObservatoryData {
 }
 
 const BALANCE_CARDS: Record<string, { label: string; badge: string; note: string; featured?: boolean }> = {
-  ex_ai_bot: { label: "EX-AI Bot · Total Deposited", badge: "EX-AI", note: "members deposited", featured: true },
+  all_sources: { label: "All Sources Combined", badge: "Total claimable", note: "members holding", featured: true },
+  ex_ai_bot: { label: "EX-AI Bot · Total Deposited", badge: "EX-AI", note: "members deposited" },
   main_wallet: { label: "Main Wallet Balance", badge: "Claimable", note: "members holding" },
   partner_wallet: { label: "Partner Program Wallet Balance", badge: "Claimable", note: "members holding" },
 };

@@ -16,7 +16,7 @@ const now = () => new Date().toISOString();
 // lookup, so the wrappers can log a hit versus a miss even under concurrency.
 const cacheProbe = new AsyncLocalStorage<{ read: boolean }>();
 
-async function withCacheLog(table: string, userId: string, read: () => Promise<JsonObject | null>): Promise<JsonObject | null> {
+async function withCacheLog<T>(table: string, userId: string, read: () => Promise<T>): Promise<T> {
   return cacheProbe.run({ read: false }, async () => {
     const data = await read();
     console.log(`[cache] ${cacheProbe.getStore()?.read ? "MISS → DB read" : "HIT"}: ${table} / ${userId}`);
@@ -203,6 +203,35 @@ export function orbitPartnerStatisticsFor(userId: string): Promise<JsonObject | 
         referralsLine: row.referrals_line, rankStatistics: row.rank_statistics,
       };
     }, ["orbit_partner_statistics", userId], { tags: [`orbit_partner_statistics:${userId}`] })(),
+  );
+}
+
+export interface UserBalances { exAiBot: number; mainWallet: number; partnerWallet: number; total: number }
+
+/** Written on every OrbitOne sync (see services/sync.service.ts); the schema is
+    migrations/023_user_balances.sql. */
+export async function upsertUserBalances(userId: string, balances: { exAiBot: number; mainWallet: number; partnerWallet: number }) {
+  const result = await dbClient().from("user_balances").upsert({
+    user_id: userId, ex_ai_bot: balances.exAiBot, main_wallet: balances.mainWallet,
+    partner_wallet: balances.partnerWallet, updated_at: now(),
+  });
+  if (result.error) throw new Error(`Supabase user balances upsert failed: ${result.error.message}`);
+  revalidateTag(`user_balances:${userId}`);
+}
+
+export function userBalancesFor(userId: string): Promise<UserBalances | null> {
+  return withCacheLog("user_balances", userId, () =>
+    unstable_cache(async () => {
+      const result = await dbClient().from("user_balances")
+        .select("ex_ai_bot, main_wallet, partner_wallet, total").eq("user_id", userId).maybeSingle();
+      const row = await assertResult(result) as
+        { ex_ai_bot: string | number; main_wallet: string | number; partner_wallet: string | number; total: string | number } | null;
+      if (!row) return null;
+      return {
+        exAiBot: Number(row.ex_ai_bot), mainWallet: Number(row.main_wallet),
+        partnerWallet: Number(row.partner_wallet), total: Number(row.total),
+      };
+    }, ["user_balances", userId], { tags: [`user_balances:${userId}`] })(),
   );
 }
 
