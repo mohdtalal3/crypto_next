@@ -7,7 +7,6 @@ export default async function Tools() {
     <header className="site-header">
       <a className="site-brand" href="/">
         <img className="site-logo" src="/logo.png" alt="D.A.R.A."/>
-        <span className="obs-wordmark"><strong>D.A.R.A.</strong><span>Capture · Claim · Credit</span></span>
       </a>
       <nav className="site-actions">
         <a className="btn ghost" href="/">Home</a>

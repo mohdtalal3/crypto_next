@@ -45,27 +45,40 @@ export default async function Observatory() {
     Promise.resolve(mapPaths()),
     Promise.resolve(regionPositions()),
   ]);
+  const year = new Date().getFullYear();
   return <div className="observatory">
     <header className="obs-topbar">
-      <div className="obs-brand"><img className="obs-logo" src="/logo.png" alt="D.A.R.A."/><div className="obs-wordmark"><strong>D.A.R.A.</strong><span>C A P T U R E &nbsp;·&nbsp; C L A I M &nbsp;·&nbsp; C R E D I T</span></div></div>
-      <a className="obs-member" href="/login">MEMBER VIEW <span aria-hidden="true">→</span></a>
+      <a className="obs-brand" href="/"><img className="obs-logo" src="/logo.png" alt="D.A.R.A."/></a>
+      <nav className="obs-nav">
+        <a className="obs-cta" href="/signup">Create account</a>
+        <a className="obs-cta gold" href="/login">Member log in <span aria-hidden="true">→</span></a>
+      </nav>
     </header>
 
-    <section className="obs-hero">
-      <div className="obs-hero-intro">
-        <p className="obs-eyebrow"><span className="obs-pulse" aria-hidden="true"/> THE OBSERVATORY <span className="obs-eyebrow-sep">/</span> GLOBAL ONBOARDING</p>
-        <h1>The world is finding<br/>its way back.</h1>
-        <p className="obs-sub">A live view of members reconnecting with their history. Each new arrival adds another point to the picture.</p>
-      </div>
-      <div className="obs-tier"><small>Membership dashboard</small><strong>The Observatory</strong></div>
-    </section>
+    <main className="obs-main">
+      <section className="obs-hero">
+        <div className="obs-hero-intro">
+          <p className="obs-eyebrow"><span className="obs-pulse" aria-hidden="true"/> THE OBSERVATORY <span className="obs-eyebrow-sep">·</span> GLOBAL ONBOARDING</p>
+          <h1>The world is finding<br/>its way back.</h1>
+          <p className="obs-sub">A live view of members reconnecting with their history. Each new arrival adds another point to the picture.</p>
+          <div className="obs-hero-cta">
+            <a className="btn primary" href="/signup">Create account</a>
+            <a className="btn ghost" href="/login">Member log in</a>
+          </div>
+        </div>
+      </section>
 
-    <ObservatoryBoard data={data} map={map} positions={positions}/>
+      <ObservatoryBoard data={data} map={map} positions={positions}/>
 
-    <BalanceSources balances={balances}/>
+      <BalanceSources balances={balances}/>
+    </main>
 
     <footer className="obs-foot">
-      <a href="/login">Member log in</a> · <a href="/signup">Create account</a>
+      <div className="obs-foot-inner">
+        <div className="obs-foot-brand"><img src="/logo.png" alt="D.A.R.A."/><span>Digital Asset Recovery Alliance</span></div>
+        <nav className="obs-foot-nav"><a href="/login">Member log in</a><a href="/signup">Create account</a></nav>
+      </div>
+      <div className="obs-foot-legal">© {year} D.A.R.A. — Digital Asset Recovery Alliance. Figures shown are aggregated membership views and update periodically.</div>
     </footer>
   </div>;
 }
