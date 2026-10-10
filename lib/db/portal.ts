@@ -1,5 +1,6 @@
 import "server-only";
 
+import { AsyncLocalStorage } from "node:async_hooks";
 import { revalidateTag, unstable_cache } from "next/cache";
 import { dbClient, authClient } from "@/lib/db/client";
 import { isPortalRole, STAFF_ROLES } from "@/lib/auth/roles";
@@ -10,6 +11,18 @@ import type { JsonObject, PortalRole } from "@/types";
 
 const CHUNK = 500;
 const now = () => new Date().toISOString();
+
+// Diagnostics: tracks whether the DB read actually ran for the current cache
+// lookup, so the wrappers can log a hit versus a miss even under concurrency.
+const cacheProbe = new AsyncLocalStorage<{ read: boolean }>();
+
+async function withCacheLog(table: string, userId: string, read: () => Promise<JsonObject | null>): Promise<JsonObject | null> {
+  return cacheProbe.run({ read: false }, async () => {
+    const data = await read();
+    console.log(`[cache] ${cacheProbe.getStore()?.read ? "MISS → DB read" : "HIT"}: ${table} / ${userId}`);
+    return data;
+  });
+}
 
 async function assertResult<T>({ data, error }: { data: T; error: { message: string } | null }) {
   if (error) throw new Error(`Supabase request failed: ${error.message}`);
@@ -100,7 +113,8 @@ async function upsertDocument(table: string, userId: string, data: JsonObject) {
 }
 
 async function documentFor(table: string, userId: string): Promise<JsonObject | null> {
-  console.log(`[cache-check] DB read: ${table} / ${userId}`); // TEMPORARY — remove after verifying cache
+  const probe = cacheProbe.getStore();
+  if (probe) probe.read = true;
   const result = await dbClient().from(table).select("data").eq("user_id", userId).maybeSingle();
   const row = await assertResult(result) as { data?: JsonObject } | null;
   return row?.data ?? null;
@@ -109,11 +123,13 @@ async function documentFor(table: string, userId: string): Promise<JsonObject | 
 // Document reads are cached per user and table; the matching upsert invalidates
 // the tag, so a cached value is only ever replaced when its data is rewritten.
 function cachedDocumentFor(table: string, userId: string): Promise<JsonObject | null> {
-  return unstable_cache(
-    () => documentFor(table, userId),
-    ["document", table, userId],
-    { tags: [`${table}:${userId}`] },
-  )();
+  return withCacheLog(table, userId, () =>
+    unstable_cache(
+      () => documentFor(table, userId),
+      ["document", table, userId],
+      { tags: [`${table}:${userId}`] },
+    )(),
+  );
 }
 
 // Neo Bank disabled — see migrations/020_drop_neo_bank.sql:
@@ -174,16 +190,20 @@ export async function upsertOrbitPartnerStatistics(userId: string, source: JsonO
 }
 
 export function orbitPartnerStatisticsFor(userId: string): Promise<JsonObject | null> {
-  return unstable_cache(async () => {
-    const result = await dbClient().from("orbit_partner_statistics").select("*").eq("user_id", userId).maybeSingle();
-    const row = await assertResult(result) as Record<string, unknown> | null;
-    if (!row) return null;
-    return {
-      inviterName: row.inviter_name, inviterPrettyId: row.inviter_pretty_id,
-      ownPrettyId: row.my_pretty_id, total: row.total, search: row.search, referrals: row.referrals,
-      referralsLine: row.referrals_line, rankStatistics: row.rank_statistics,
-    };
-  }, ["orbit_partner_statistics", userId], { tags: [`orbit_partner_statistics:${userId}`] })();
+  return withCacheLog("orbit_partner_statistics", userId, () =>
+    unstable_cache(async () => {
+      const probe = cacheProbe.getStore();
+      if (probe) probe.read = true;
+      const result = await dbClient().from("orbit_partner_statistics").select("*").eq("user_id", userId).maybeSingle();
+      const row = await assertResult(result) as Record<string, unknown> | null;
+      if (!row) return null;
+      return {
+        inviterName: row.inviter_name, inviterPrettyId: row.inviter_pretty_id,
+        ownPrettyId: row.my_pretty_id, total: row.total, search: row.search, referrals: row.referrals,
+        referralsLine: row.referrals_line, rankStatistics: row.rank_statistics,
+      };
+    }, ["orbit_partner_statistics", userId], { tags: [`orbit_partner_statistics:${userId}`] })(),
+  );
 }
 
 // Neo Bank disabled — see migrations/020_drop_neo_bank.sql. Commented out, restore when re-enabling:
