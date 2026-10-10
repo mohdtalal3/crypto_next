@@ -1,6 +1,7 @@
 import { claimableBalances, observatoryData, type ClaimableBalance, type ObservatoryData } from "@/lib/db/observatory";
 import { mapPaths, regionPositions } from "@/lib/map";
 import { ObservatoryBoard } from "@/components/observatory/ObservatoryBoard";
+import { AuthCtas } from "@/components/observatory/AuthCtas";
 import { number } from "@/lib/utils/format";
 
 // Public aggregates rebuild at most once per minute; every other visitor is
@@ -49,10 +50,7 @@ export default async function Observatory() {
   return <div className="observatory">
     <header className="obs-topbar">
       <a className="obs-brand" href="/"><img className="obs-logo" src="/logo.png" alt="D.A.R.A."/></a>
-      <nav className="obs-nav">
-        <a className="obs-cta" href="/signup">Create account</a>
-        <a className="obs-cta gold" href="/login">Member log in <span aria-hidden="true">→</span></a>
-      </nav>
+      <AuthCtas variant="header"/>
     </header>
 
     <main className="obs-main">
@@ -61,10 +59,7 @@ export default async function Observatory() {
           <p className="obs-eyebrow"><span className="obs-pulse" aria-hidden="true"/> THE OBSERVATORY <span className="obs-eyebrow-sep">·</span> GLOBAL ONBOARDING</p>
           <h1>The world is finding<br/>its way back.</h1>
           <p className="obs-sub">A live view of members reconnecting with their history. Each new arrival adds another point to the picture.</p>
-          <div className="obs-hero-cta">
-            <a className="btn primary" href="/signup">Create account</a>
-            <a className="btn ghost" href="/login">Member log in</a>
-          </div>
+          <AuthCtas variant="hero"/>
         </div>
       </section>
 

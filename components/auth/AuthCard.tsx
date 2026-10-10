@@ -7,9 +7,9 @@ export function AuthCard({ mode, error }: { mode: "login" | "signup"; error?: st
       <a className="auth-brand-logo" href="/"><img src="/logo.png" alt="D.A.R.A."/></a>
       <div className="auth-brand-copy">
         <h2>{signup ? "Begin your recovery journey." : "Your recovery, in one place."}</h2>
-        <p>One portal for Neo Bank accounts, OrbitOne statistics and claim numbers — synced, current and ready when you are.</p>
+        <p>One portal for Backoffice.aurum accounts, OrbitOne statistics and claim numbers — synced, current and ready when you are.</p>
         <ul className="auth-points">
-          <li><b>Unified view</b><span>Neo Bank and OrbitOne side by side.</span></li>
+          <li><b>Unified view</b><span>Backoffice.aurum and OrbitOne side by side.</span></li>
           <li><b>Automated sync</b><span>Balances and transactions stay current.</span></li>
           <li><b>Claim tracking</b><span>Claim numbers generated and archived for you.</span></li>
         </ul>

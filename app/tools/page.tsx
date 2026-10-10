@@ -24,7 +24,7 @@ export default async function Tools() {
       {isStaff(session.role) && <a className="card tool" href="/admin/users">
         <span className="tool-icon">🛡️</span>
         <h2>Admin dashboard</h2>
-        <p>Browse everyone using the portal and open their Neo Bank or OrbitOne data.</p>
+        <p>Browse everyone using the portal and open their Backoffice.aurum or OrbitOne data.</p>
         <span className="badge done">{session.role === "founder" ? "Founder" : "Staff"}</span>
       </a>}
       {/* Neo Bank hidden from the selector — re-enable when needed: <a className="card tool" href="/dashboard"><span className="tool-icon">🏦</span><h2>Neo Bank</h2><p>Transactions, wallet, partner program, live trading & EX-AI PRO.</p><span className="badge done">Active</span></a> */}
